@@ -20,7 +20,7 @@ require('dotenv').config();
 //deploy
 
 const password = `${process.env.DB_PASSWORD}`;
-const caPath = './certificates/isrgrootx1.pem';
+const caPath = "./certificates/isrgrootx1.pem";
 const sslConfig = {
   ca: fs.readFileSync(caPath), // Read the CA certificate file
 };
