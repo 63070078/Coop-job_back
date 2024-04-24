@@ -25,13 +25,15 @@ router.post("/signin", async (req, res, next) => {
     // Check if username is correct
     const [users] = await conn.query("SELECT * FROM users WHERE email=?", [email]);
     const user = users[0];
+    const hashedPassword = await bcrypt.hash(user.password, 10);
+    console.log("hash pass ", hashedPassword)
     console.log(users[0]);
     console.log(users)
     if (!user) {
       throw new Error("Incorrect username or password");
     }
     // Check if password is correct
-    if (!(await bcrypt.compare(password, user.password))) {
+    if (!(await bcrypt.compare(password, hashedPassword))) {
       throw new Error("Incorrect username or password");
     }
     // Check if token already existed
