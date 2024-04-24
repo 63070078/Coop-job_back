@@ -24,7 +24,7 @@ router.post("/signin", async (req, res, next) => {
   try {
     // Check if username is correct
     const [users] = await conn.query("SELECT * FROM users WHERE email=?", [email]);
-    const user = users[0];
+    const user = users;
     if (!user) {
       throw new Error("Incorrect username or password");
     }
