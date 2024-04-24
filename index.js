@@ -21,6 +21,10 @@ app.get("/welcome", (req, res) => {
   res.status(200).send("Welcome 🙌 ");
 });
 
+app.get('/', (req, res) => {
+  res.send('Hello, World!'); // เปลี่ยนข้อความตรงนี้ตามที่ต้องการ
+});
+
 const port = 3000;
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
