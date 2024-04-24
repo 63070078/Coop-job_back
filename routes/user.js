@@ -6,59 +6,60 @@ const bcrypt = require('bcrypt');
 const { generateToken } = require("../utils/token");
 const { isLoggedIn } = require("../middleware");
 
-const loginSchema = Joi.object({
-  email: Joi.string().required(),
-  password: Joi.string().required(),
-});
+
 router.post("/signin", async (req, res, next) => {
-  
   try {
-    await loginSchema.validateAsync(req.body, { abortEarly: false });
-  } catch (err) {
-    return res.status(400).send(err);
-  }
-  const email = req.body.email;
-  const password = req.body.password;
+    const email = req.body.email;
+    const password = req.body.password;
 
-  await pool.beginTransaction();
-  try {
-    // Check if username is correct
-    const [users] = await pool.query("SELECT * FROM users WHERE email=?", [email]);
-    const user = users[0];
+    // Start transaction
+    await pool.beginTransaction();
 
+    try {
+      // Check if username is correct
+      const [users] = await pool.query("SELECT * FROM users WHERE email=?", [email]);
+      const user = users[0];
 
-    if (!user) {
-      throw new Error("Incorrect username or password");
-    }
-    // Check if password is correct
-    if (!(await bcrypt.compare(password, user.password))) {
-      throw new Error("Incorrect username or password");
-    }
-    // Check if token already existed
-    const [tokens] = await pool.query("SELECT * FROM access_tokens WHERE user_id=?", [user.user_id]);
-    let token = tokens[0]?.token;
-    if (!token) {
-      // Generate and save token into database
-      token = generateToken();
-      await pool.query("INSERT INTO access_tokens(user_id, token) VALUES (?, ?)", [user.user_id, token]);
+      if (!user) {
+        throw new Error("Incorrect username or password");
+      }
+
+      // Check if password is correct
+      if (!(await bcrypt.compare(password, user.password))) {
+        throw new Error("Incorrect username or password");
+      }
+
+      // Check if token already existed
+      const [tokens] = await pool.query("SELECT * FROM access_tokens WHERE user_id=?", [user.user_id]);
+      let token = tokens[0]?.token;
+
+      if (!token) {
+        // Generate and save token into database
+        token = generateToken();
+        await pool.query("INSERT INTO access_tokens(user_id, token) VALUES (?, ?)", [user.user_id, token]);
         if (user.role === 'applicant') {
           await pool.query('INSERT INTO students (user_id, email) VALUES (?, ?)',[user.user_id, email]);
-        }else if (user.role === 'recruiter') {
+        } else if (user.role === 'recruiter') {
           await pool.query('INSERT INTO companies (user_id, email) VALUES (?, ?)', [user.user_id, email]);
+        } else if (user.role === 'admin') {
+          await pool.query('INSERT INTO admin (user_id, email) VALUES (?, ?)', [user.user_id, email]);
+        }
       }
-      else if (user.role === 'admin') {
-        await pool.query('INSERT INTO admin (user_id, email) VALUES (?, ?)', [user.user_id, email]);
+
+      // Commit transaction
+      await pool.commit();
+
+      res.status(200).json({ token: token });
+    } catch (error) {
+      // Rollback transaction if there's an error
+      await pool.rollback();
+      throw error; // re-throw the error to be caught by the outer catch block
     }
-    }
-    pool.commit();
-    res.status(200).json({ token: token });
   } catch (error) {
-    pool.rollback();
     res.status(400).json(error.toString());
-  } finally {
-    pool.release();
   }
 });
+
 
 
 router.get("/me", isLoggedIn, async (req, res, next) => {
