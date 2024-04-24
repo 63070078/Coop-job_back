@@ -17,8 +17,8 @@ app.use("/application", require("./routes/application"));
 app.use("/recruiter", require("./routes/recruiter"));
 app.use("/user", require("./routes/user"));
 app.use("/admin", require("./routes/admin"));
-app.get("/", (req, res) => {
-  res.send("Express on Vercel");
+app.get("/welcome", (req, res) => {
+  res.status(200).send("Welcome 🙌 ");
 });
 
 const port = 3000;
