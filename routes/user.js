@@ -11,11 +11,6 @@ router.post("/signin", async (req, res, next) => {
   try {
     const email = req.body.email;
     const password = req.body.password;
-
-    // Start transaction
-    await pool.beginTransaction();
-
-    try {
       // Check if username is correct
       const [users] = await pool.query("SELECT * FROM users WHERE email=?", [email]);
       const user = users[0];
@@ -45,16 +40,7 @@ router.post("/signin", async (req, res, next) => {
           await pool.query('INSERT INTO admin (user_id, email) VALUES (?, ?)', [user.user_id, email]);
         }
       }
-
-      // Commit transaction
-      await pool.commit();
-
       res.status(200).json({ token: token });
-    } catch (error) {
-      // Rollback transaction if there's an error
-      await pool.rollback();
-      throw error; // re-throw the error to be caught by the outer catch block
-    }
   } catch (error) {
     res.status(400).json(error.toString());
   }
