@@ -34,7 +34,7 @@ router.post("/signin", async (req, res, next) => {
     }
     // Check if token already existed
     const [tokens] = await conn.query("SELECT * FROM access_tokens WHERE user_id=?", [user.user_id]);
-    let token = tokens[0].token;
+    const token = tokens[0].token;
     if (!token) {
       // Generate and save token into database
       token = generateToken();
